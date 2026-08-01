@@ -60,7 +60,12 @@ public class Main {
 	/**
 	 * Wall-clock interval between simulator ticks in threaded mode, in milliseconds.
 	 */
-	public static final int MILLISECONDS_PER_TICK = 10;
+	public static final String SIMULATION_TICK_MILLISECONDS_PROPERTY = "mtr.simulationTickMillis";
+	public static final int MILLISECONDS_PER_TICK = getSimulationTickMilliseconds();
+
+	private static final int DEFAULT_SIMULATION_TICK_MILLISECONDS = 10;
+	private static final int MIN_SIMULATION_TICK_MILLISECONDS = 10;
+	private static final int MAX_SIMULATION_TICK_MILLISECONDS = 1000;
 
 	/**
 	 * Standalone server entry point.
@@ -153,6 +158,11 @@ public class Main {
 		} else if (worldIndex >= 0 && worldIndex < simulators.size()) {
 			simulators.get(worldIndex).sendMessageC2S(queueObject);
 		}
+	}
+
+	private static int getSimulationTickMilliseconds() {
+		final int configuredInterval = Integer.getInteger(SIMULATION_TICK_MILLISECONDS_PROPERTY, DEFAULT_SIMULATION_TICK_MILLISECONDS);
+		return Math.max(MIN_SIMULATION_TICK_MILLISECONDS, Math.min(MAX_SIMULATION_TICK_MILLISECONDS, configuredInterval));
 	}
 
 	/**

@@ -142,7 +142,7 @@ public class FileLoader<T extends SerializedDataBaseWithId> {
 				if (!fileHashes.containsKey(parentAndFileName) || hash != fileHashes.getInt(parentAndFileName)) {
 					createDirectory(path.resolve(parentFolderName));
 
-					try (final MessagePacker messagePacker = MessagePack.newDefaultPacker(Files.newOutputStream(path.resolve(parentAndFileName), StandardOpenOption.CREATE))) {
+					try (final MessagePacker messagePacker = MessagePack.newDefaultPacker(Files.newOutputStream(path.resolve(parentAndFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))) {
 						packMessage(messagePacker, data, useReducedHash);
 					} catch (Exception e) {
 						log.error("Failed to write file {}", parentAndFileName, e);
