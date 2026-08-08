@@ -1,0 +1,40 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+issueTrackerURL = "https://github.com/A-BenLi06"
+
+[[mods]]
+modId = "mtrcoreperf"
+version = "${version}"
+displayName = "MTR Core Performance"
+description = '''
+Server-side performance patches for the Transport Simulation Core bundled inside Minecraft Transit Railway.
+
+Removes the per-tick rebuild of every rail's signal reservation state, replaces a stream-based
+hot-path check, fixes save-file truncation, and makes the threaded simulation tick interval
+configurable via -Dmtr.simulationTickMillis.
+'''
+
+[[mixins]]
+config = "mtrcoreperf.mixins.json"
+
+[[dependencies.mtrcoreperf]]
+    modId = "forge"
+    mandatory = true
+    versionRange = "[47,)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.mtrcoreperf]]
+    modId = "minecraft"
+    mandatory = true
+    versionRange = "[1.20.1,1.20.2)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.mtrcoreperf]]
+    modId = "mtr"
+    mandatory = true
+    versionRange = "[4.0.5,)"
+    ordering = "AFTER"
+    side = "BOTH"

@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"minVersion": "0.8.5",
+	"package": "com.yuuniverse.mtrcoreperf.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"mixins": [
+		"FileLoaderMixin",
+		"MainMixin",
+		"RailMixin"
+	],
+	"client": [],
+	"server": [],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

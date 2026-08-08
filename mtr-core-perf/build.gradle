@@ -1,0 +1,77 @@
+plugins {
+	id 'java'
+	id 'net.neoforged.moddev.legacyforge' version '2.0.107'
+}
+
+base {
+	archivesName = 'mtr-core-perf'
+	group = 'com.yuuniverse'
+	version = '1.0.0'
+}
+
+java {
+	toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+legacyForge {
+	version = "$minecraft_version-$forge_version"
+	validateAccessTransformers = false
+
+	mods {
+		mtrcoreperf {
+			sourceSet(sourceSets.main)
+		}
+	}
+
+	// Deliberately no dev `runs` block. A ModDevGradle dev runtime uses official (mojmap) names,
+	// while a released MTR jar is reobfuscated to SRG, so MTR's own registration blows up with
+	// NoSuchFieldError long before the simulation classes this mod patches are ever loaded.
+	// Verify against a real Forge server instead — see README.md.
+}
+
+repositories {
+	mavenCentral()
+	flatDir { dirs 'libs' }
+}
+
+dependencies {
+	// MTR is only needed to compile the mixin targets against. It is never bundled.
+	// The jar under libs/ must be the exact build the server runs.
+	compileOnly files("libs/${mtr_jar}")
+}
+
+// No Mixin annotation processor: it only generates refmaps, which these mixins do not need
+// (every target is a plain, unobfuscated class inside the MTR jar, so all of them are
+// remap = false). It was tried and does NOT validate that @Shadow / @Overwrite targets exist —
+// a deliberately bogus @Shadow field still compiled cleanly — so it buys nothing here.
+
+// The mixin targets (org.mtr.core.*) are plain, unobfuscated classes inside the MTR jar,
+// so no refmap and no reobfuscation of mixin references is required. Every @Mixin/@At in
+// this project sets remap = false accordingly.
+
+tasks.named('jar') {
+	manifest {
+		attributes([
+			'Specification-Title'   : 'mtr-core-perf',
+			'Specification-Vendor'  : 'yuuniverse',
+			'Specification-Version' : '1',
+			'Implementation-Title'  : 'mtr-core-perf',
+			'Implementation-Version': project.version,
+			'Implementation-Vendor' : 'yuuniverse',
+			'MixinConfigs'          : 'mtrcoreperf.mixins.json'
+		])
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.release = 17
+}
+
+processResources {
+	def props = [version: project.version, minecraft_version: minecraft_version, forge_version: forge_version]
+	inputs.properties props
+	filesMatching('META-INF/mods.toml') {
+		expand props
+	}
+}

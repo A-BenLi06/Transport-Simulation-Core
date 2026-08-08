@@ -1,0 +1,207 @@
+From b3e786aac4239eea1fb5bbf3cd857497f83f1050 Mon Sep 17 00:00:00 2001
+From: BenLi06 <89132514+A-BenLi06@users.noreply.github.com>
+Date: Mon, 3 Aug 2026 23:51:31 +0800
+Subject: [PATCH] Backport yunniverse-server core optimizations to the TSC
+ build bundled by MTR 4.0.x (Forge 1.20.1)
+
+---
+ src/main/java/org/mtr/core/Main.java               | 12 +++++-
+ src/main/java/org/mtr/core/data/Rail.java          | 50 ++++++++++++++++------
+ .../java/org/mtr/core/simulation/FileLoader.java   |  2 +-
+ .../java/org/mtr/core/simulation/Simulator.java    |  4 +-
+ src/main/java/org/mtr/core/tool/Utilities.java     | 22 ++++------
+ 5 files changed, 61 insertions(+), 29 deletions(-)
+
+diff --git a/src/main/java/org/mtr/core/Main.java b/src/main/java/org/mtr/core/Main.java
+index 1628c7a..cff1923 100644
+--- a/src/main/java/org/mtr/core/Main.java
++++ b/src/main/java/org/mtr/core/Main.java
+@@ -39,7 +39,17 @@ public class Main {
+ 	public static Function<UUID, String> CLIENT_NAME_RESOLVER;
+ 
+ 	public static final Logger LOGGER = LogManager.getLogger("TransportSimulationCore");
+-	public static final int MILLISECONDS_PER_TICK = 10;
++	public static final String SIMULATION_TICK_MILLISECONDS_PROPERTY = "mtr.simulationTickMillis";
++	public static final int MILLISECONDS_PER_TICK = getSimulationTickMilliseconds();
++
++	private static final int DEFAULT_SIMULATION_TICK_MILLISECONDS = 10;
++	private static final int MIN_SIMULATION_TICK_MILLISECONDS = 10;
++	private static final int MAX_SIMULATION_TICK_MILLISECONDS = 1000;
++
++	private static int getSimulationTickMilliseconds() {
++		final int configuredInterval = Integer.getInteger(SIMULATION_TICK_MILLISECONDS_PROPERTY, DEFAULT_SIMULATION_TICK_MILLISECONDS);
++		return Math.max(MIN_SIMULATION_TICK_MILLISECONDS, Math.min(MAX_SIMULATION_TICK_MILLISECONDS, configuredInterval));
++	}
+ 
+ 	public static void main(String[] args) {
+ 		try {
+diff --git a/src/main/java/org/mtr/core/data/Rail.java b/src/main/java/org/mtr/core/data/Rail.java
+index 0ddfe09..c0518f0 100644
+--- a/src/main/java/org/mtr/core/data/Rail.java
++++ b/src/main/java/org/mtr/core/data/Rail.java
+@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.ints.IntAVLTreeSet;
+ import it.unimi.dsi.fastutil.longs.Long2LongAVLTreeMap;
+ import it.unimi.dsi.fastutil.longs.LongArrayList;
+ import it.unimi.dsi.fastutil.longs.LongConsumer;
++import it.unimi.dsi.fastutil.longs.LongIterator;
+ import it.unimi.dsi.fastutil.objects.*;
+ import org.mtr.core.generated.data.RailSchema;
+ import org.mtr.core.serializer.ReaderBase;
+@@ -21,10 +22,12 @@ public final class Rail extends RailSchema {
+ 
+ 	private final ObjectOpenHashSet<Rail> connectedRails1 = new ObjectOpenHashSet<>();
+ 	private final ObjectOpenHashSet<Rail> connectedRails2 = new ObjectOpenHashSet<>();
+-	private final Long2LongAVLTreeMap preBlockedVehicleIds = new Long2LongAVLTreeMap();
+-	private final Long2LongAVLTreeMap currentlyBlockedVehicleIds = new Long2LongAVLTreeMap();
+-	private final Long2LongAVLTreeMap preBlockedVehicleIdsOld = new Long2LongAVLTreeMap();
+-	private final Long2LongAVLTreeMap currentlyBlockedVehicleIdsOld = new Long2LongAVLTreeMap();
++	private Long2LongAVLTreeMap preBlockedVehicleIds = new Long2LongAVLTreeMap();
++	private Long2LongAVLTreeMap currentlyBlockedVehicleIds = new Long2LongAVLTreeMap();
++	private Long2LongAVLTreeMap preBlockedVehicleIdsOld = new Long2LongAVLTreeMap();
++	private Long2LongAVLTreeMap currentlyBlockedVehicleIdsOld = new Long2LongAVLTreeMap();
++	private boolean preBlockedVehicleIdsChanged;
++	private boolean currentlyBlockedVehicleIdsChanged;
+ 	private final LongArrayList manualBlockColors = new LongArrayList();
+ 	private final boolean reversePositions;
+ 
+@@ -167,20 +170,29 @@ public final class Rail extends RailSchema {
+ 	}
+ 
+ 	public void tick1(Simulator simulator) {
+-		final boolean needsUpdate = !Utilities.sameItems(preBlockedVehicleIds.keySet(), preBlockedVehicleIdsOld.keySet()) || !Utilities.sameItems(currentlyBlockedVehicleIds.keySet(), currentlyBlockedVehicleIdsOld.keySet());
+-		simulator.clients.forEach(client -> {
++		tick1(simulator.clients.toArray(new Client[simulator.clients.size()]));
++	}
++
++	public void tick1(Client[] clients) {
++		final boolean needsUpdate = preBlockedVehicleIdsChanged || currentlyBlockedVehicleIdsChanged || preBlockedVehicleIds.size() != preBlockedVehicleIdsOld.size() || currentlyBlockedVehicleIds.size() != currentlyBlockedVehicleIdsOld.size();
++		for (final Client client : clients) {
+ 			if (closeTo(client.getPosition(), client.getUpdateRadius())) {
+ 				client.update(this, needsUpdate);
+ 			}
+-		});
++		}
+ 
+-		preBlockedVehicleIdsOld.clear();
+-		preBlockedVehicleIdsOld.putAll(preBlockedVehicleIds);
++		final Long2LongAVLTreeMap previousPreBlockedVehicleIds = preBlockedVehicleIdsOld;
++		preBlockedVehicleIdsOld = preBlockedVehicleIds;
++		preBlockedVehicleIds = previousPreBlockedVehicleIds;
+ 		preBlockedVehicleIds.clear();
+ 
+-		currentlyBlockedVehicleIdsOld.clear();
+-		currentlyBlockedVehicleIdsOld.putAll(currentlyBlockedVehicleIds);
++		final Long2LongAVLTreeMap previousCurrentlyBlockedVehicleIds = currentlyBlockedVehicleIdsOld;
++		currentlyBlockedVehicleIdsOld = currentlyBlockedVehicleIds;
++		currentlyBlockedVehicleIds = previousCurrentlyBlockedVehicleIds;
+ 		currentlyBlockedVehicleIds.clear();
++
++		preBlockedVehicleIdsChanged = false;
++		currentlyBlockedVehicleIdsChanged = false;
+ 	}
+ 
+ 	public void tick2(long millisElapsed) {
+@@ -303,7 +315,13 @@ public final class Rail extends RailSchema {
+ 
+ 	private static void reserveRail(long vehicleId, long color, ObjectOpenHashSet<Rail> visitedRails, Rail rail, boolean currentlyBlocked) {
+ 		if (!visitedRails.contains(rail) && rail.signalColors.contains(color)) {
+-			(currentlyBlocked ? rail.currentlyBlockedVehicleIds : rail.preBlockedVehicleIds).put(color, vehicleId);
++			if (currentlyBlocked) {
++				rail.currentlyBlockedVehicleIdsChanged |= !rail.currentlyBlockedVehicleIdsOld.containsKey(color);
++				rail.currentlyBlockedVehicleIds.put(color, vehicleId);
++			} else {
++				rail.preBlockedVehicleIdsChanged |= !rail.preBlockedVehicleIdsOld.containsKey(color);
++				rail.preBlockedVehicleIds.put(color, vehicleId);
++			}
+ 			visitedRails.add(rail);
+ 			rail.connectedRails1.forEach(connectedRail -> reserveRail(vehicleId, color, visitedRails, connectedRail, currentlyBlocked));
+ 			rail.connectedRails2.forEach(connectedRail -> reserveRail(vehicleId, color, visitedRails, connectedRail, currentlyBlocked));
+@@ -311,7 +329,13 @@ public final class Rail extends RailSchema {
+ 	}
+ 
+ 	private static boolean isNotBlocked(Long2LongAVLTreeMap blockedVehicleIds, long vehicleId) {
+-		return blockedVehicleIds.values().longStream().allMatch(blockedVehicleId -> blockedVehicleId == vehicleId);
++		final LongIterator iterator = blockedVehicleIds.values().iterator();
++		while (iterator.hasNext()) {
++			if (iterator.nextLong() != vehicleId) {
++				return false;
++			}
++		}
++		return true;
+ 	}
+ 
+ 	public enum Shape {QUADRATIC, TWO_RADII, CABLE}
+diff --git a/src/main/java/org/mtr/core/simulation/FileLoader.java b/src/main/java/org/mtr/core/simulation/FileLoader.java
+index cfcecbb..4f769b5 100644
+--- a/src/main/java/org/mtr/core/simulation/FileLoader.java
++++ b/src/main/java/org/mtr/core/simulation/FileLoader.java
+@@ -136,7 +136,7 @@ public class FileLoader<T extends SerializedDataBaseWithId> {
+ 				if (!fileHashes.containsKey(parentAndFileName) || hash != fileHashes.getInt(parentAndFileName)) {
+ 					createDirectory(path.resolve(parentFolderName));
+ 
+-					try (final MessagePacker messagePacker = MessagePack.newDefaultPacker(Files.newOutputStream(path.resolve(parentAndFileName), StandardOpenOption.CREATE))) {
++					try (final MessagePacker messagePacker = MessagePack.newDefaultPacker(Files.newOutputStream(path.resolve(parentAndFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))) {
+ 						packMessage(messagePacker, data, useReducedHash);
+ 					} catch (Exception e) {
+ 						Main.LOGGER.error("", e);
+diff --git a/src/main/java/org/mtr/core/simulation/Simulator.java b/src/main/java/org/mtr/core/simulation/Simulator.java
+index df10ec5..beb1f25 100644
+--- a/src/main/java/org/mtr/core/simulation/Simulator.java
++++ b/src/main/java/org/mtr/core/simulation/Simulator.java
+@@ -46,6 +46,7 @@ public class Simulator extends Data implements Utilities {
+ 	private final Object2LongOpenHashMap<UUID> ridingVehicleIds = new Object2LongOpenHashMap<>();
+ 	private final MessageQueue<QueueObject> messageQueueC2S = new MessageQueue<>();
+ 	private final MessageQueue<QueueObject> messageQueueS2C = new MessageQueue<>();
++	private static final Client[] EMPTY_CLIENTS = new Client[0];
+ 
+ 	private static final int SIMULATION_DIFFERENCE_LOGGING_THRESHOLD = 120000;
+ 
+@@ -273,7 +274,8 @@ public class Simulator extends Data implements Utilities {
+ 				vehiclePositionsForTransportMode.add(new Object2ObjectAVLTreeMap<>());
+ 			});
+ 
+-			rails.forEach(rail -> rail.tick1(this));
++			final Client[] clientsSnapshot = clients.isEmpty() ? EMPTY_CLIENTS : clients.toArray(new Client[clients.size()]);
++			rails.forEach(rail -> rail.tick1(clientsSnapshot));
+ 			rails.forEach(rail -> rail.tick2(millisElapsed));
+ 			depots.forEach(Depot::tick);
+ 
+diff --git a/src/main/java/org/mtr/core/tool/Utilities.java b/src/main/java/org/mtr/core/tool/Utilities.java
+index 640d8e2..62fe6e7 100644
+--- a/src/main/java/org/mtr/core/tool/Utilities.java
++++ b/src/main/java/org/mtr/core/tool/Utilities.java
+@@ -166,22 +166,18 @@ public interface Utilities {
+ 	}
+ 
+ 	static long circularDifference(long value1, long value2, long totalDegrees) {
+-		long tempValue1 = value1;
+-		final long halfTotalDegrees = totalDegrees / 2;
+-
+-		if (tempValue1 - halfTotalDegrees > value2 || tempValue1 + halfTotalDegrees <= value2) {
+-			tempValue1 -= (tempValue1 - halfTotalDegrees - value2) / totalDegrees * totalDegrees;
+-		}
+-
+-		while (tempValue1 - halfTotalDegrees > value2) {
+-			tempValue1 -= totalDegrees;
++		if (value1 == value2) {
++			return 0;
+ 		}
+-
+-		while (tempValue1 + halfTotalDegrees <= value2) {
+-			tempValue1 += totalDegrees;
++		if (totalDegrees <= 0) {
++			throw new IllegalArgumentException("The circular range must be positive");
+ 		}
+ 
+-		return tempValue1 - value2;
++		// Fold the difference into the half-open range (-half, +half], matching the
++		// iterative implementation this replaces, but without the unbounded loops.
++		final long halfTotalDegrees = totalDegrees / 2;
++		final long shifted = Math.floorMod(Math.floorMod(value1, totalDegrees) - Math.floorMod(value2, totalDegrees) + halfTotalDegrees - 1, totalDegrees);
++		return shifted - halfTotalDegrees + 1;
+ 	}
+ 
+ 	static int compare(long value1, long value2, IntSupplier ifZero) {
+-- 
+2.8.1.windows.1
+
