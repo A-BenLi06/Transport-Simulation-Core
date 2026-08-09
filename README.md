@@ -1,3 +1,18 @@
+> ## Yunniverse Performance — Forge 1.20.1
+>
+> **This branch is not upstream.** It adds [`mtr-core-perf/`](mtr-core-perf/), a ~7 KB companion
+> Forge mod that applies this repository's `perf/yunniverse-server` optimizations to
+> **MTR 4.0.5 on Minecraft 1.20.1** via Mixin. It installs **alongside** an unmodified MTR jar —
+> unlike the 1.21.1 releases, which replace it.
+> → **[Usage and install](mtr-core-perf/README.md)** ·
+> **[Releases](https://github.com/A-BenLi06/Transport-Simulation-Core/releases/tag/mtr-4.0.5-1.20.1-yunniverse-perf-v1)**
+>
+> **本分支不是上游。** 它新增了 [`mtr-core-perf/`](mtr-core-perf/) —— 一个约 7 KB 的配套 Forge mod，
+> 通过 Mixin 把本仓库 `perf/yunniverse-server` 的优化应用到 **Minecraft 1.20.1 上的 MTR 4.0.5**。
+> 它与**原版 MTR jar 并存**，这一点和 1.21.1 版本的「替换 jar」不同。
+> → **[用法与安装](mtr-core-perf/README.md)** ·
+> **[Releases](https://github.com/A-BenLi06/Transport-Simulation-Core/releases/tag/mtr-4.0.5-1.20.1-yunniverse-perf-v1)**
+
 # Transport Simulation Core
 
 Transport Simulation Core is a standalone Java 21 backend that simulates transport networks (stations, routes, depots, vehicles, lifts, paths) across one or more dimensions. It can run as a normal service with an embedded webserver, or be embedded in another Java process and driven via an in-process message queue.
