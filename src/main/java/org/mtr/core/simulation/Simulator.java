@@ -86,6 +86,7 @@ public class Simulator extends Data implements Utilities {
 	private final MessageQueue<QueueObject> messageQueueC2S = new MessageQueue<>();
 	private final MessageQueue<QueueObject> messageQueueS2C = new MessageQueue<>();
 	private final LongOpenHashSet jammedRouteIds = new LongOpenHashSet();
+	private final LongOpenHashSet previouslyJammedRouteIds = new LongOpenHashSet();
 	private static final Client[] EMPTY_CLIENTS = new Client[0];
 
 	/**
@@ -390,7 +391,7 @@ public class Simulator extends Data implements Utilities {
 	 * @return whether the route is currently considered jammed for pathfinding purposes.
 	 */
 	public boolean isRouteJammed(long routeId) {
-		return routeId != 0 && jammedRouteIds.contains(routeId);
+		return routeId != 0 && (jammedRouteIds.contains(routeId) || previouslyJammedRouteIds.contains(routeId));
 	}
 
 	/**
@@ -469,6 +470,11 @@ public class Simulator extends Data implements Utilities {
 				sync();
 			}
 
+			// Preserve the previous tick's result while sidings are simulated. Without this one-tick
+			// hand-off, a depot that happens to be iterated before the stalled train cannot observe the
+			// congestion and may dispatch another vehicle into the same route.
+			previouslyJammedRouteIds.clear();
+			previouslyJammedRouteIds.addAll(jammedRouteIds);
 			jammedRouteIds.clear();
 			sidings.forEach(siding -> siding.simulateVehicles(millisElapsed, vehiclePositions.get(siding.getTransportModeOrdinal())));
 			clients.forEach(client -> client.sendUpdates(this));
