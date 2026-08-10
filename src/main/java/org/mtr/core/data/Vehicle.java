@@ -107,6 +107,15 @@ public class Vehicle extends VehicleSchema implements Utilities {
 		return reversed;
 	}
 
+	/**
+	 * Keep jam age stable when the simulator deliberately skips wall-clock time after exhausting its
+	 * catch-up budget. Without this adjustment, every vehicle could be reported as newly jammed solely
+	 * because the scheduler discarded elapsed time rather than because the vehicle stopped moving.
+	 */
+	public void skipSimulationTime(long skippedMillis) {
+		lastMovementMillis += skippedMillis;
+	}
+
 	public boolean closeToDepot() {
 		return !getIsOnRoute() || railProgress < vehicleExtraData.getTotalVehicleLength() + vehicleExtraData.getRailLength();
 	}
