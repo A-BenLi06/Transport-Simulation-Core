@@ -11,7 +11,11 @@ plugins {
 }
 
 group = "org.mtr"
-version = project.version
+version = listOf(
+	providers.gradleProperty("upstream_mtr_version").get(),
+	"mc${providers.gradleProperty("minecraft_version").get()}",
+	providers.gradleProperty("modification_version").get(),
+).joinToString("-")
 
 repositories {
 	mavenCentral()

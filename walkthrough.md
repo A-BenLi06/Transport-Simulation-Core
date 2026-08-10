@@ -105,3 +105,17 @@ and results rather than private chain-of-thought.
   `version = "4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4"` metadata entry.
 - Assembled validation JAR SHA-256:
   `3DC09909BACD480A7833FC61BDEDFF3F76660DE4F27D230FEE3B7B50A061F9D1`.
+
+## 2026-08-10T21:04:26+08:00 — Derive the version from independent components
+
+- The first standardized configuration stored the complete version as one Gradle property. That
+  made the visible output correct but did not give build logic separate authoritative fields for
+  the upstream MTR release, Minecraft compatibility, and downstream iteration.
+- Replaced the combined literal with `upstream_mtr_version = 4.1.0-beta.2`,
+  `minecraft_version = 1.21.1`, and `modification_version = yunniverse-perf-v4`.
+- Gradle now constructs the project version once from those three properties. Generated runtime
+  version files, Shadow artifacts and Maven coordinates continue to receive
+  `4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4` without duplicating any component.
+- `gradlew shadowJar` completed with `BUILD SUCCESSFUL` and reproduced the expected standardized
+  Core artifact name and SHA-256
+  `FB5E52EE245DA971B1A8511CF42EBDD5D5404E065F1A2E578A6D30B6565D587B`.

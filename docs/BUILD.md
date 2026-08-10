@@ -33,7 +33,8 @@ Outputs land in `build/libs/`:
 - `Transport-Simulation-Core-<version>-sources.jar`
 - `Transport-Simulation-Core-<version>-javadoc.jar`
 
-`<version>` is defined in [`gradle.properties`](../gradle.properties). The `generateVersion`
+`<version>` is derived from `upstream_mtr_version`, `minecraft_version`, and
+`modification_version` in [`gradle.properties`](../gradle.properties). The `generateVersion`
 task rewrites [`src/main/VersionTemplate.java`](../src/main/VersionTemplate.java) and
 [`website/version-template.txt`](../website/version-template.txt) into `Version.java` and
 `version.ts` respectively, so the running server and the bundled UI report the same version.
