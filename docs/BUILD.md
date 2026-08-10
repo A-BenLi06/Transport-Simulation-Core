@@ -19,7 +19,7 @@ All commands run from the repository root.
 
 ```bash
 ./gradlew build                            # compile, run tests, package the jar
-./gradlew jar                              # just package
+./gradlew shadowJar                        # package the relocated runtime/fat jar
 ./gradlew test                             # JUnit 5 only
 ./gradlew clean build
 ./gradlew publishToMavenLocal              # publish a local Maven artifact (group org.mtr)
@@ -27,8 +27,9 @@ All commands run from the repository root.
 
 Outputs land in `build/libs/`:
 
-- `Transport-Simulation-Core-<version>.jar` — the runnable fat jar
-  (`Main-Class: org.mtr.core.Main`).
+- `Transport-Simulation-Core-<version>.jar` — the relocated runnable fat jar produced by
+  `shadowJar` (`Main-Class: org.mtr.core.Main`). The plain `jar` task is not suitable for
+  embedding Core classes into an MTR mod JAR because dependency package names are not relocated.
 - `Transport-Simulation-Core-<version>-sources.jar`
 - `Transport-Simulation-Core-<version>-javadoc.jar`
 

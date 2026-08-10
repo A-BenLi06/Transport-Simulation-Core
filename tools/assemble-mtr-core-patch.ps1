@@ -40,6 +40,10 @@ $classEntries = @(
 
 $coreEntries = @(& $jarToolPath tf $coreJarPath)
 $mtrEntries = @(& $jarToolPath tf $originalMtrJarPath)
+$shadedDependencyMarker = 'org/mtr/libraries/com/google/gson/Gson.class'
+if ($shadedDependencyMarker -notin $coreEntries) {
+	throw "Core JAR is not the relocated shadow artifact; run gradlew shadowJar before assembly"
+}
 foreach ($entry in $classEntries) {
 	if ($entry -notin $coreEntries) {
 		throw "Patched core class is missing from the Core JAR: $entry"
