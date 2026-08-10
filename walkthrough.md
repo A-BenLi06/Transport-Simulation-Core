@@ -1,0 +1,107 @@
+# MTR 1.21.1 Yunniverse Performance Walkthrough
+
+This file records evidence, design changes, validation, and deployment findings for the
+Yunniverse MTR performance branch. It intentionally documents auditable engineering reasoning
+and results rather than private chain-of-thought.
+
+## 2026-08-01T18:47:25+08:00 — Reduce simulation allocation and persistence pressure
+
+- Source review found repeated temporary collections in the rail simulation tick and repeated
+  state serialization even when the payload had not changed.
+- Reused stable simulation state where ownership permits and avoided redundant persistence work.
+- The change targets server tick allocation rate and retained heap; it does not alter route or
+  timetable semantics.
+- Source commit: `3b5d219 Optimize simulation state updates and persistence`.
+
+## 2026-08-01T19:08:21+08:00 — Package the Core repair without modifying Steam 'n' Rails
+
+- Steam 'n' Rails uses Create rail APIs and bogey-style registries; it does not call MTR Core.
+  No direct MTR/SNR ownership conflict was found.
+- Added a reproducible allowlisted assembler for replacing only reviewed Core classes inside the
+  NeoForge MTR shell. Signed targets, missing classes, and unexpected inputs are rejected.
+- Source commit: `8b857f2 Add reproducible MTR Core patch assembler`.
+
+## 2026-08-01T21:25:03+08:00 — Replace circular timetable replay loops
+
+- Timetable calculations replayed interval additions until reaching the current time. Long
+  uptime and missed intervals made the work proportional to elapsed history.
+- Replaced the replay with overflow-safe constant-time circular arithmetic while preserving the
+  same boundary behavior.
+- Source commit: `37bbc41 Optimize circular timetable arithmetic`.
+
+## 2026-08-10T19:36:36+08:00 — Prevent siding departures from feeding an occupied route
+
+- The simulator previously started automatic departures without checking the departure envelope
+  against jammed and already deployed vehicles. Multiple sidings could also make the decision in
+  the same tick before occupancy became visible.
+- Added congestion-aware startup admission, previous-tick jam carryover, path-index-zero
+  occupancy, and same-tick reservation after a successful dispatch.
+- This is admission backpressure: a congested route stops receiving new trains while existing
+  movement and timetable state remain intact.
+- Source commit: `741e362 Add MTR departure congestion backpressure`.
+
+## 2026-08-10T20:02:19+08:00 — Bound simulation catch-up work
+
+- `Simulator.tickUntilCaughtUp()` used an unbounded replay loop. If one simulated second cost more
+  than one real second, the worker accumulated lag faster than it consumed it and could stop
+  yielding indefinitely.
+- Limited one catch-up invocation to five one-second steps. Excess elapsed time is skipped with a
+  warning, while vehicle timestamps are shifted so existing jam age is preserved.
+- This complements departure admission: one control bounds new train count, and the other
+  guarantees the simulation worker yields under overload.
+- Selected vehicle-deployment and utility tests passed.
+- Source commit: `00931bb Bound MTR simulation catch-up work`.
+
+## 2026-08-10T20:27:34+08:00 — Preserve the relocated MTR ABI
+
+- An initial assembled artifact used the plain Core JAR and failed at runtime with
+  `NoSuchMethodError`: its Gson return type was `com.google.gson.JsonObject`, while the NeoForge
+  MTR shell expects relocated `org.mtr.libraries.com.google.gson.JsonObject`.
+- Extended the assembler allowlist for `Siding` and `Vehicle`, required a relocated Gson marker,
+  and documented `shadowJar` as the only valid embedding input.
+- `javap` confirmed the corrected Gson and FastUtil descriptors.
+- Source commits: `d57d484 Include deployment classes in MTR assembler` and
+  `4bd5771 Reject unrelocated MTR patch artifacts`.
+
+## 2026-08-10T20:44:57+08:00 — Production smoke test
+
+- Corrected MTR v3 reached the dedicated-server ready state and remained alive through two full
+  five-minute autosave cycles.
+- No `NoSuchMethodError`, tick-loop exception, or `Can't keep up!` warning occurred during the
+  controlled window. Working set remained approximately 4.66 GiB with no connected clients.
+- This validates packaging, startup and short-run save behavior. A long congested timetable soak
+  remains necessary to measure real-world pile-up frequency.
+
+## 2026-08-10T20:52:51+08:00 — Standardize the performance version
+
+### Version decision
+
+- Standardized this branch on
+  `4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4`:
+  `<upstream MTR version>-mc<Minecraft version>-<downstream iteration>`.
+- Iteration `v4` is shared with the corresponding Create build. Advancing from the previous
+  `v2`/`v3` artifact suffixes avoids release-name collisions and makes the pair unambiguous.
+
+### Build-system changes
+
+- Updated the Core Gradle version so the relocated Shadow artifact, generated runtime version,
+  Maven coordinates and documentation use the same identifier.
+- Added a mandatory `-ModVersion` assembler parameter. The assembler now updates the `mtr` entry
+  in `META-INF/neoforge.mods.toml` and verifies the embedded value after packaging; renaming a JAR
+  without updating runtime metadata is no longer possible.
+
+### Validation
+
+- `gradlew test --tests org.mtr.core.data.VehicleDeploymentTests --tests
+  org.mtr.core.tool.UtilitiesTests shadowJar` completed with `BUILD SUCCESSFUL`; compilation
+  reported four existing deprecation warnings.
+- The independent clone has no prebuilt Angular `website/dist` directory, so the upstream
+  non-failing `setupWebserver` task printed a missing-directory stack trace. It did not affect the
+  tested Java classes or relocated Shadow artifact used by the MTR assembler.
+- Built `Transport-Simulation-Core-4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4.jar`, then assembled
+  `MTR-4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4.jar` from the last runtime-validated NeoForge
+  shell.
+- The assembler verified all allowlisted classes, the relocated Gson marker, and the final
+  `version = "4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4"` metadata entry.
+- Assembled validation JAR SHA-256:
+  `3DC09909BACD480A7833FC61BDEDFF3F76660DE4F27D230FEE3B7B50A061F9D1`.

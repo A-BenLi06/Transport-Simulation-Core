@@ -13,6 +13,10 @@ param(
 	[string] $OriginalMtrJar,
 
 	[Parameter(Mandatory = $true)]
+	[ValidatePattern('^[0-9A-Za-z][0-9A-Za-z.+_-]*$')]
+	[string] $ModVersion,
+
+	[Parameter(Mandatory = $true)]
 	[string] $OutputJar
 )
 
@@ -101,6 +105,41 @@ try {
 			$destinationStream.Dispose()
 		}
 	}
+
+	$metadataPath = 'META-INF/neoforge.mods.toml'
+	$metadataEntry = $outputArchive.GetEntry($metadataPath)
+	if ($null -eq $metadataEntry) {
+		throw "Target MTR JAR is missing NeoForge metadata: $metadataPath"
+	}
+
+	$metadataTimestamp = $metadataEntry.LastWriteTime
+	$metadataReader = [System.IO.StreamReader]::new($metadataEntry.Open())
+	try {
+		$metadata = $metadataReader.ReadToEnd()
+	} finally {
+		$metadataReader.Dispose()
+	}
+
+	$versionPattern = '(?ms)(\[\[mods\]\]\s*modId\s*=\s*"mtr"\s*version\s*=\s*")[^"]+(")'
+	$versionRegex = [System.Text.RegularExpressions.Regex]::new($versionPattern)
+	if (-not $versionRegex.IsMatch($metadata)) {
+		throw 'Target MTR JAR has no recognizable mtr version field'
+	}
+	$versionedMetadata = $versionRegex.Replace(
+		$metadata,
+		{ param($match) $match.Groups[1].Value + $ModVersion + $match.Groups[2].Value },
+		1
+	)
+
+	$metadataEntry.Delete()
+	$newMetadataEntry = $outputArchive.CreateEntry($metadataPath, [System.IO.Compression.CompressionLevel]::Optimal)
+	$newMetadataEntry.LastWriteTime = $metadataTimestamp
+	$metadataWriter = [System.IO.StreamWriter]::new($newMetadataEntry.Open(), [System.Text.UTF8Encoding]::new($false))
+	try {
+		$metadataWriter.Write($versionedMetadata)
+	} finally {
+		$metadataWriter.Dispose()
+	}
 } finally {
 	$outputArchive.Dispose()
 }
@@ -110,6 +149,23 @@ foreach ($entry in $classEntries) {
 	if ($entry -notin $outputEntries) {
 		throw "Patched output is missing class: $entry"
 	}
+}
+
+$verificationArchive = [System.IO.Compression.ZipFile]::OpenRead($outputJarPath)
+try {
+	$metadataEntry = $verificationArchive.GetEntry('META-INF/neoforge.mods.toml')
+	$metadataReader = [System.IO.StreamReader]::new($metadataEntry.Open())
+	try {
+		$metadata = $metadataReader.ReadToEnd()
+	} finally {
+		$metadataReader.Dispose()
+	}
+	$expectedVersion = 'version = "' + $ModVersion + '"'
+	if ($metadata -notmatch "(?m)^$([System.Text.RegularExpressions.Regex]::Escape($expectedVersion))\s*$") {
+		throw "Patched output metadata does not contain expected MTR version: $ModVersion"
+	}
+} finally {
+	$verificationArchive.Dispose()
 }
 
 Get-FileHash -LiteralPath $outputJarPath -Algorithm SHA256
