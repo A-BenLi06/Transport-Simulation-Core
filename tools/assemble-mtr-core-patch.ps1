@@ -31,6 +31,8 @@ if (Test-Path -LiteralPath $outputJarPath) {
 $classEntries = @(
 	'org/mtr/core/Main.class',
 	'org/mtr/core/data/Rail.class',
+	'org/mtr/core/data/Siding.class',
+	'org/mtr/core/data/Vehicle.class',
 	'org/mtr/core/simulation/FileLoader.class',
 	'org/mtr/core/simulation/Simulator.class',
 	'org/mtr/core/tool/Utilities.class'
