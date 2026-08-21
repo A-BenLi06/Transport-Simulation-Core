@@ -1,4 +1,4 @@
-package com.yuuniverse.mtrcoreperf.mixin;
+package io.github.abenli06.mtrcoreperf.mixin;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-import com.yuuniverse.mtrcoreperf.MtrCorePerf;
+import io.github.abenli06.mtrcoreperf.MtrCorePerf;
 
 /**
  * Makes the threaded simulation's tick interval configurable.

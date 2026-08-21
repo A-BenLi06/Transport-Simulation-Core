@@ -5,7 +5,7 @@ plugins {
 
 base {
 	archivesName = 'mtr-core-perf'
-	group = 'com.yuuniverse'
+	group = 'io.github.abenli06'
 	version = '1.0.0'
 }
 
@@ -53,11 +53,11 @@ tasks.named('jar') {
 	manifest {
 		attributes([
 			'Specification-Title'   : 'mtr-core-perf',
-			'Specification-Vendor'  : 'yuuniverse',
+			'Specification-Vendor'  : 'A-BenLi06',
 			'Specification-Version' : '1',
 			'Implementation-Title'  : 'mtr-core-perf',
 			'Implementation-Version': project.version,
-			'Implementation-Vendor' : 'yuuniverse',
+			'Implementation-Vendor' : 'A-BenLi06',
 			'MixinConfigs'          : 'mtrcoreperf.mixins.json'
 		])
 	}

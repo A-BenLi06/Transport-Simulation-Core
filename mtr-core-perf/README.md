@@ -2,7 +2,7 @@
 
 *[English](#english) · [中文](#中文)*
 
-A small companion mod that applies the `perf/yunniverse-server` Transport Simulation Core
+A small companion mod that applies the `perf/optimized-build-1.20.1` Transport Simulation Core
 optimizations to **Minecraft Transit Railway 4.0.5 on Forge 1.20.1**, via Mixin.
 
 > ⚠️ **This installs differently from the 1.21.1 releases.** Those ship a patched MTR jar that
@@ -18,8 +18,8 @@ optimizations to **Minecraft Transit Railway 4.0.5 on Forge 1.20.1**, via Mixin.
 
 ### Install
 
-1. Download `mtr-core-perf-1.0.0+1.20.1-yunniverse-perf.jar` from
-   [Releases](https://github.com/A-BenLi06/Transport-Simulation-Core/releases/tag/mtr-4.0.5-1.20.1-yunniverse-perf-v1).
+1. Download `mtr-core-perf-1.0.0+1.20.1-performance.jar` from
+   [Releases](https://github.com/A-BenLi06/Transport-Simulation-Core/releases/tag/mtr-4.0.5-1.20.1-performance-v1).
 2. Drop it into `mods/`, **next to** your existing MTR jar. Do not remove or replace MTR.
 3. Restart the server.
 
@@ -112,7 +112,7 @@ anyone who does want to rebuild.
 ### Building from source
 
 ```bash
-git clone -b perf/yunniverse-server-1.20.1 https://github.com/A-BenLi06/Transport-Simulation-Core.git
+git clone -b perf/optimized-build-1.20.1 https://github.com/A-BenLi06/Transport-Simulation-Core.git
 cd Transport-Simulation-Core/mtr-core-perf
 # put the exact MTR jar your server runs into libs/, then point gradle.properties at it
 ./gradlew build
@@ -165,8 +165,8 @@ timetable-deviation maths was not.
 
 ### 安装
 
-1. 从 [Releases](https://github.com/A-BenLi06/Transport-Simulation-Core/releases/tag/mtr-4.0.5-1.20.1-yunniverse-perf-v1)
-   下载 `mtr-core-perf-1.0.0+1.20.1-yunniverse-perf.jar`。
+1. 从 [Releases](https://github.com/A-BenLi06/Transport-Simulation-Core/releases/tag/mtr-4.0.5-1.20.1-performance-v1)
+   下载 `mtr-core-perf-1.0.0+1.20.1-performance.jar`。
 2. 放进 `mods/`，**与你现有的 MTR jar 并存**。不要删除或替换 MTR。
 3. 重启服务端。
 
@@ -256,7 +256,7 @@ Mixin 在类加载时改写「已经重定位、已经是 Java 8」的类，从�
 ### 从源码构建
 
 ```bash
-git clone -b perf/yunniverse-server-1.20.1 https://github.com/A-BenLi06/Transport-Simulation-Core.git
+git clone -b perf/optimized-build-1.20.1 https://github.com/A-BenLi06/Transport-Simulation-Core.git
 cd Transport-Simulation-Core/mtr-core-perf
 # 把服务器实际运行的那个 MTR jar 放进 libs/，再在 gradle.properties 里指向它
 ./gradlew build

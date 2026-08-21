@@ -1,4 +1,4 @@
-package com.yuuniverse.mtrcoreperf.mixin;
+package io.github.abenli06.mtrcoreperf.mixin;
 
 import org.mtr.core.data.Client;
 import org.mtr.core.data.Rail;
@@ -48,7 +48,7 @@ public abstract class RailMixin {
 	public abstract boolean closeTo(org.mtr.core.data.Position position, double radius);
 
 	/**
-	 * @author yuuniverse
+	 * @author A-BenLi06
 	 * @reason Swap the reservation buffers instead of copying them, and compare the key sets in a
 	 *         single ordered pass instead of two {@code containsAll} calls.
 	 */
@@ -75,7 +75,7 @@ public abstract class RailMixin {
 	}
 
 	/**
-	 * @author yuuniverse
+	 * @author A-BenLi06
 	 * @reason Avoid building a {@code LongStream} and a capturing predicate per call; this runs
 	 *         once per blocked-colour map per signal test, i.e. several times per vehicle per tick.
 	 */

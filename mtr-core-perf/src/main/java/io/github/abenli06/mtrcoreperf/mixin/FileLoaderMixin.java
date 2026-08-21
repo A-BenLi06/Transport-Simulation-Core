@@ -1,4 +1,4 @@
-package com.yuuniverse.mtrcoreperf.mixin;
+package io.github.abenli06.mtrcoreperf.mixin;
 
 import java.io.IOException;
 import java.io.OutputStream;

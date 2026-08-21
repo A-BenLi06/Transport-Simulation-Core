@@ -1,4 +1,4 @@
-package com.yuuniverse.mtrcoreperf;
+package io.github.abenli06.mtrcoreperf;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
