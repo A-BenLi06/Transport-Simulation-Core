@@ -196,3 +196,7 @@ and results rather than private chain-of-thought.
   historical artifact references to use neutral performance terminology.
 - Simulation behavior is unchanged. A fresh core build and shell assembly are required so the core
   and full MTR JAR metadata and filenames remain consistent.
+- `gradlew shadowJar --no-daemon` completed successfully. The verified shell assembler then
+  produced `MTR-4.1.0-beta.2-mc1.21.1-performance-v4.jar` with SHA-256
+  `4048C45FE40B789D8152336620CDEFAC75D81AABA08F8F6BC58AC8E9CE4E004A`.
+- Extracted-artifact inspection found no removed downstream branding token in the assembled JAR.
