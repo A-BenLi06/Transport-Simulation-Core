@@ -200,3 +200,9 @@ and results rather than private chain-of-thought.
   produced `MTR-4.1.0-beta.2-mc1.21.1-performance-v4.jar` with SHA-256
   `4048C45FE40B789D8152336620CDEFAC75D81AABA08F8F6BC58AC8E9CE4E004A`.
 - Extracted-artifact inspection found no removed downstream branding token in the assembled JAR.
+- Renamed the maintained branch to `perf/optimized-build-1.21.1`, pushed and commit-verified the
+  replacement, then deleted the old remote branch. The maintained 1.20.1 branch was cleaned,
+  package-compiled, and renamed to `perf/optimized-build-1.20.1` using the same sequence.
+- Updated the current GitHub release to tag `mtr-4.1.0-beta.2-performance-v4` with the neutral v4
+  JAR, and replaced the 1.20.1 companion release with its neutral namespace build. Superseded
+  branded releases and tags were removed.
