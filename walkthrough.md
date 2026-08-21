@@ -119,3 +119,73 @@ and results rather than private chain-of-thought.
 - `gradlew shadowJar` completed with `BUILD SUCCESSFUL` and reproduced the expected standardized
   Core artifact name and SHA-256
   `FB5E52EE245DA971B1A8511CF42EBDD5D5404E065F1A2E578A6D30B6565D587B`.
+
+## 2026-08-21T16:58:50+08:00 — Prepare upstream MTR Core performance contributions
+
+### Tracking issue and contribution boundary
+
+- Created upstream issue
+  https://github.com/Minecraft-Transit-Railway/Transport-Simulation-Core/issues/32 to document the
+  overload feedback loop, production symptoms, source-level causes, and the independent patch
+  scopes.
+- Rebased each contribution onto official
+  `Minecraft-Transit-Railway/Transport-Simulation-Core:master` head `ee09ec5`.
+- Excluded Yunniverse versioning, the MTR shell assembler, relocated-class allowlists, deployment
+  artifacts, the configurable 10 ms simulator cadence experiment, and the unrelated persistence
+  truncation fix. The three upstream branches contain only Core source and focused tests.
+- All PRs are drafts and GitHub reports them mergeable. No upstream automated checks were attached
+  at the time of this entry.
+
+### Rail signal-state hot path
+
+- Draft PR: https://github.com/Minecraft-Transit-Railway/Transport-Simulation-Core/pull/33
+- Branch: `A-BenLi06:perf/simulation-hot-path`
+- Before the patch, every rail created its own array snapshot of the same client set, used generic
+  collection comparison, copied four AVL maps, and streamed boxed reservation values every
+  simulation tick.
+- The simulator now snapshots clients once. Rails rotate current/previous reservation maps in O(1),
+  record key additions while reserving, detect removals by size, and scan values with a primitive
+  iterator. The required client visibility scan remains O(rails × clients), but temporary client
+  references fall from O(rails × clients) to O(clients), and reservation history no longer copies
+  O(entries) when rotating.
+- A regression test verifies that reservation visibility remains correct after map rotation.
+
+### Constant-time circular timetable arithmetic
+
+- Draft PR: https://github.com/Minecraft-Transit-Railway/Transport-Simulation-Core/pull/34
+- Branch: `A-BenLi06:perf/circular-time-arithmetic`
+- The original clamp/difference helpers repeatedly added or subtracted one period. Work was
+  O(abs(offset) / period), so very large persisted or external time values could monopolize the
+  simulation thread or overflow during normalization.
+- Floor-mod arithmetic makes normalization O(1), retains the old half-period tie direction and NaN
+  behavior, and rejects non-positive periods rather than entering a non-terminating loop.
+- Equivalence tests compare the new implementation with the former iterative semantics over
+  representative ranges and add Long.MIN_VALUE/Long.MAX_VALUE coverage.
+
+### Congestion admission and bounded catch-up
+
+- Draft PR: https://github.com/Minecraft-Transit-Railway/Transport-Simulation-Core/pull/35
+- Branch: `A-BenLi06:perf/congestion-catchup-control`
+- `tickUntilCaughtUp()` previously had no work bound. When one simulated second cost at least one
+  wall-clock second, it could never converge; a gap over one hour could synchronously replay up to
+  3,600 slices.
+- One scheduler call now performs at most five one-second slices. Remaining elapsed time is
+  explicitly skipped and logged, and vehicle last-movement timestamps shift by the same amount so
+  load shedding alone cannot create false jams. This intentionally trades missed elapsed service
+  for guaranteed scheduler yield under overload.
+- A departure now checks current occupancy and previous/current/next route jams before startup.
+  Successful deployment is inserted into the current snapshot immediately, preventing another
+  siding later in the same tick from making the same admission decision. Jam state remains visible
+  for one handoff tick so siding iteration order cannot hide it. Segment index zero is included.
+- Tests cover blocked deployment, immediate reservation, and exactly one tick of jam-state handoff.
+
+### Validation
+
+- Each branch passed `gradlew test --no-daemon`; the complete suite reported 113 tests.
+- The first parallel run caused two independent `RuntimeTests` workers to contend for fixed port
+  8889. The hot-path and circular branches still completed successfully; the congestion branch was
+  rerun alone after updating the intentional one-tick jam lifecycle assertion and completed with
+  `BUILD SUCCESSFUL`.
+- The upstream non-failing `setupWebserver` task also printed its known missing
+  `website/dist/website/browser` stack trace in fresh worktrees. Java compilation and tests were
+  unaffected.
