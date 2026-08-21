@@ -39,8 +39,8 @@ task rewrites [`src/main/VersionTemplate.java`](../src/main/VersionTemplate.java
 [`website/version-template.txt`](../website/version-template.txt) into `Version.java` and
 `version.ts` respectively, so the running server and the bundled UI report the same version.
 
-Yunniverse performance builds use `<upstream-mod-version>-mc<minecraft-version>-<iteration>`.
-For example, `4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4` identifies the upstream MTR release,
+Performance builds use `<upstream-mod-version>-mc<minecraft-version>-<iteration>`.
+For example, `4.1.0-beta.2-mc1.21.1-performance-v4` identifies the upstream MTR release,
 the target Minecraft version, and the downstream performance iteration without changing the
 MTR mod ID.
 
@@ -51,10 +51,10 @@ allowlisted patch instead of relying on the output filename:
 ```powershell
 .\tools\assemble-mtr-core-patch.ps1 `
   -JarTool <path-to-jar.exe> `
-  -CoreJar .\build\libs\Transport-Simulation-Core-4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4.jar `
+  -CoreJar .\build\libs\Transport-Simulation-Core-4.1.0-beta.2-mc1.21.1-performance-v4.jar `
   -OriginalMtrJar <path-to-original-mtr.jar> `
-  -ModVersion 4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4 `
-  -OutputJar .\build\MTR-4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4.jar
+  -ModVersion 4.1.0-beta.2-mc1.21.1-performance-v4 `
+  -OutputJar .\build\MTR-4.1.0-beta.2-mc1.21.1-performance-v4.jar
 ```
 
 ### Schema-driven code generation

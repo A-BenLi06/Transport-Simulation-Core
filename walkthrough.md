@@ -1,7 +1,7 @@
-# MTR 1.21.1 Yunniverse Performance Walkthrough
+# MTR 1.21.1 Performance Walkthrough
 
 This file records evidence, design changes, validation, and deployment findings for the
-Yunniverse MTR performance branch. It intentionally documents auditable engineering reasoning
+MTR performance branch. It intentionally documents auditable engineering reasoning
 and results rather than private chain-of-thought.
 
 ## 2026-08-01T18:47:25+08:00 — Reduce simulation allocation and persistence pressure
@@ -77,7 +77,7 @@ and results rather than private chain-of-thought.
 ### Version decision
 
 - Standardized this branch on
-  `4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4`:
+  `4.1.0-beta.2-mc1.21.1-performance-v4`:
   `<upstream MTR version>-mc<Minecraft version>-<downstream iteration>`.
 - Iteration `v4` is shared with the corresponding Create build. Advancing from the previous
   `v2`/`v3` artifact suffixes avoids release-name collisions and makes the pair unambiguous.
@@ -98,11 +98,11 @@ and results rather than private chain-of-thought.
 - The independent clone has no prebuilt Angular `website/dist` directory, so the upstream
   non-failing `setupWebserver` task printed a missing-directory stack trace. It did not affect the
   tested Java classes or relocated Shadow artifact used by the MTR assembler.
-- Built `Transport-Simulation-Core-4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4.jar`, then assembled
-  `MTR-4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4.jar` from the last runtime-validated NeoForge
+- Built `Transport-Simulation-Core-4.1.0-beta.2-mc1.21.1-performance-v4.jar`, then assembled
+  `MTR-4.1.0-beta.2-mc1.21.1-performance-v4.jar` from the last runtime-validated NeoForge
   shell.
 - The assembler verified all allowlisted classes, the relocated Gson marker, and the final
-  `version = "4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4"` metadata entry.
+  `version = "4.1.0-beta.2-mc1.21.1-performance-v4"` metadata entry.
 - Assembled validation JAR SHA-256:
   `3DC09909BACD480A7833FC61BDEDFF3F76660DE4F27D230FEE3B7B50A061F9D1`.
 
@@ -112,10 +112,10 @@ and results rather than private chain-of-thought.
   made the visible output correct but did not give build logic separate authoritative fields for
   the upstream MTR release, Minecraft compatibility, and downstream iteration.
 - Replaced the combined literal with `upstream_mtr_version = 4.1.0-beta.2`,
-  `minecraft_version = 1.21.1`, and `modification_version = yunniverse-perf-v4`.
+  `minecraft_version = 1.21.1`, and `modification_version = performance-v4`.
 - Gradle now constructs the project version once from those three properties. Generated runtime
   version files, Shadow artifacts and Maven coordinates continue to receive
-  `4.1.0-beta.2-mc1.21.1-yunniverse-perf-v4` without duplicating any component.
+  `4.1.0-beta.2-mc1.21.1-performance-v4` without duplicating any component.
 - `gradlew shadowJar` completed with `BUILD SUCCESSFUL` and reproduced the expected standardized
   Core artifact name and SHA-256
   `FB5E52EE245DA971B1A8511CF42EBDD5D5404E065F1A2E578A6D30B6565D587B`.
@@ -130,7 +130,7 @@ and results rather than private chain-of-thought.
   scopes.
 - Rebased each contribution onto official
   `Minecraft-Transit-Railway/Transport-Simulation-Core:master` head `ee09ec5`.
-- Excluded Yunniverse versioning, the MTR shell assembler, relocated-class allowlists, deployment
+- Excluded downstream versioning, the MTR shell assembler, relocated-class allowlists, deployment
   artifacts, the configurable 10 ms simulator cadence experiment, and the unrelated persistence
   truncation fix. The three upstream branches contain only Core source and focused tests.
 - All PRs are drafts and GitHub reports them mergeable. No upstream automated checks were attached
@@ -189,3 +189,10 @@ and results rather than private chain-of-thought.
 - The upstream non-failing `setupWebserver` task also printed its known missing
   `website/dist/website/browser` stack trace in fresh worktrees. Java compilation and tests were
   unaffected.
+
+## 2026-08-21T18:30:00+08:00 — Neutralize downstream naming
+
+- Replaced the downstream build qualifier with `performance-v4` and updated build instructions and
+  historical artifact references to use neutral performance terminology.
+- Simulation behavior is unchanged. A fresh core build and shell assembly are required so the core
+  and full MTR JAR metadata and filenames remain consistent.
