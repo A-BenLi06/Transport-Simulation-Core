@@ -206,3 +206,15 @@ and results rather than private chain-of-thought.
 - Updated the current GitHub release to tag `mtr-4.1.0-beta.2-performance-v4` with the neutral v4
   JAR, and replaced the 1.20.1 companion release with its neutral namespace build. Superseded
   branded releases and tags were removed.
+
+## 2026-08-23T00:39:32+08:00 — Correct upstream PR commit attribution
+
+- Rewrote the four commits across upstream PRs #33, #34, and #35 so both the Git author and
+  committer resolve to the contributor's verified GitHub account instead of the automation
+  placeholder identity.
+- Preserved each branch's final tree object exactly, so the source, tests, and PR diffs are
+  byte-for-byte unchanged. Only commit metadata, parent hashes, and resulting commit IDs changed.
+- Updated the fork branches with `--force-with-lease` after comparing their remote heads, and kept
+  the former heads under local `refs/backup/author-rewrite-20260823/*` recovery references.
+- Queried the GitHub commit API after the push and confirmed that all four rewritten commits map
+  both author and committer to `A-BenLi06`.
